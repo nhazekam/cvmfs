@@ -49,6 +49,7 @@
 #include "atomic.h"
 #include "cache_posix.h"
 #include "catalog_mgr_client.h"
+#include "catalog.h"
 #include "clientctx.h"
 #include "compression.h"
 #include "directory_entry.h"
@@ -292,6 +293,48 @@ int LibContext::GetAttr(const char *c_path, struct stat *info) {
 }
 
 
+int LibContext::GetExtAttr(const char *c_path, struct cvmfs_stat *info) {
+  ClientCtxGuard ctxg(geteuid(), getegid(), getpid());
+
+  LogCvmfs(kLogCvmfs, kLogDebug, "cvmfs_getattr (stat) for path: %s", c_path);
+
+  PathString p;
+  p.Assign(c_path, strlen(c_path));
+
+  catalog::DirectoryEntry dirent;
+  const bool found = GetDirentForPath(p, &dirent);
+
+  if (!found) {
+    return -ENOENT;
+  }
+
+  *info = dirent.GetCVMFSStatStructure();
+  return 0;
+}
+
+int LibContext::GetNCAttr(const char *c_path, struct cvmfs_nc_stat *info) {
+  ClientCtxGuard ctxg(geteuid(), getegid(), getpid());
+
+  LogCvmfs(kLogCvmfs, kLogDebug, "cvmfs_getattr (stat) for path: %s", c_path);
+
+  PathString p;
+  p.Assign(c_path, strlen(c_path));
+
+  shash::Any hash;
+  uint64_t size;
+  const bool found = mount_point_->catalog_mgr()->GetRootCatalog()->FindNested(p, &hash, &size);
+  if (!found) {
+    return -ENOENT;
+  }
+
+  info->mountpoint = c_path;
+  info->hash = &hash;
+  info->size = size;
+
+  return 0;
+}
+
+
 int LibContext::Readlink(const char *c_path, char *buf, size_t size) {
   perf::Inc(file_system()->n_fs_readlink());
   LogCvmfs(kLogCvmfs, kLogDebug, "cvmfs_readlink on path: %s", c_path);
@@ -318,7 +361,6 @@ int LibContext::Readlink(const char *c_path, char *buf, size_t size) {
 
   return 0;
 }
-
 
 int LibContext::ListDirectory(
   const char *c_path,
@@ -368,6 +410,78 @@ int LibContext::ListDirectory(
   }
   for (unsigned i = 0; i < listing_from_catalog.size(); ++i) {
     AppendStringToList(listing_from_catalog.AtPtr(i)->name.c_str(),
+                          buf, &listlen, buflen);
+  }
+
+  return 0;
+}
+
+int LibContext::ListNestedFileCatalog(
+  const char *c_path,
+  char ***buf,
+  size_t *buflen
+) {
+  LogCvmfs(kLogCvmfs, kLogDebug, "cvmfs_list_nested_file_catalog on path: %s", c_path);
+  ClientCtxGuard ctxg(geteuid(), getegid(), getpid());
+
+  if (c_path[0] == '/' && c_path[1] == '\0') {
+    // root path is expected to be "", not "/"
+    c_path = "";
+  }
+
+  PathString path;
+  path.Assign(c_path, strlen(c_path));
+
+  const string parent_path = GetParentPath(c_path);
+
+  bool found = false;
+  catalog::Catalog *catalog;
+  catalog::DirectoryEntry parent_entry;
+  found = mount_point_->catalog_mgr()->FindCatalog(c_path, &catalog, &parent_entry);
+  if (!found) {
+    LogCvmfs(kLogCatalog, kLogStderr,
+             "catalog for directory '%s' cannot be found",
+             c_path);
+    assert(false);
+  } else {
+    LogCvmfs(kLogCatalog, kLogStderr,
+             "catalog for directory '%s' found",
+             c_path);
+  }
+
+  if (!found) {
+    return -ENOENT;
+  }
+
+  size_t listlen = 0;
+  AppendStringToList(NULL, buf, &listlen, buflen);
+
+  // Build listing
+  catalog::Catalog *parent  = catalog->parent() ;
+  if( parent ){
+    std::vector<catalog::Catalog*> parents;
+    while(parent->HasParent()){
+      parents.push_back(parent);
+      parent = parent->parent();
+    }
+    parents.push_back(parent);
+    while(!parents.empty()){
+      AppendStringToList(parents.back()->root_prefix().c_str(),
+                          buf, &listlen, buflen);
+      parents.pop_back();
+    }
+  }
+
+  AppendStringToList(catalog->root_prefix().c_str(), buf, &listlen, buflen);
+
+  std::vector<catalog::Catalog::NestedCatalog> children = catalog->ListOwnNestedCatalogs();
+
+  // Add all names
+  if (children.size() == 0) {
+    return -EIO;
+  }
+  for (unsigned i = 0; i < children.size(); ++i) {
+    AppendStringToList(children.at(i).mountpoint.c_str(),
                           buf, &listlen, buflen);
   }
 

@@ -19,7 +19,6 @@
 #include "upload.h"
 #include "signature.h"
 
-
 /**
  * Multiple DirSpecItem objects make up a DirSpec object
  *

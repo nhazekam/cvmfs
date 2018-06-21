@@ -104,6 +104,10 @@ class LibContext : SingleCopy {
   int64_t Pread(int fd, void *buf, uint64_t size, uint64_t off);
   int Close(int fd);
 
+  int GetExtAttr(const char *c_path, struct cvmfs_stat *info);
+  int GetNCAttr(const char *c_path, struct cvmfs_nc_stat *info);
+  int ListNestedFileCatalog(const char *path, char ***buf, size_t *buflen);
+
   MountPoint *mount_point() { return mount_point_; }
   void set_options_mgr(OptionsManager *value) { options_mgr_ = value; }
 

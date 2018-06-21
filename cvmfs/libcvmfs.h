@@ -37,6 +37,7 @@
 
 #include <sys/stat.h>
 #include <unistd.h>
+#include <stdint.h>
 
 // Legacy error codes
 #define LIBCVMFS_FAIL_OK         0
@@ -91,6 +92,31 @@ typedef enum {
   LIBCVMFS_ERR_LOCK_WORKSPACE,
   LIBCVMFS_ERR_REVISION_BLACKLISTED,
 } cvmfs_errors;
+
+
+struct cvmfs_stat { 
+  // Struct definition information
+  unsigned version;
+  uint64_t struct_size;
+
+  // Actual contents of stat, mapped from DirectoryEntry
+  uint64_t inode;
+  unsigned int mode;
+  uid_t uid;
+  gid_t gid;
+  uint64_t size;
+  time_t mtime;
+  uint32_t linkcount;
+  bool has_xattrs;
+  bool is_external_file;
+  const void *checksum;
+};
+
+struct cvmfs_nc_stat {
+  const char *mountpoint;
+  const void *hash;
+  uint64_t size;
+};
 
 
 /**
@@ -295,6 +321,28 @@ int cvmfs_stat(cvmfs_context *ctx, const char *path, struct stat *st);
 int cvmfs_lstat(cvmfs_context *ctx, const char *path, struct stat *st);
 
 /**
+ * Get the extended CVMFS information about a file. If the file is a symlink
+ * return info about the file it points to, not the symlink itself.
+ *
+ *
+ * @param[in] path, path of file (e.g. /dir/file, not /cvmfs/repo/dir/file)
+ * @param[out] cst, cvmfs_stat buffer in which to write the result
+ * \return 0 on success, -1 on failure
+ */
+int cvmfs_ext_stat(cvmfs_context *ctx, const char *path, struct cvmfs_stat *cst);
+
+/**
+ * Get the extended CVMFS information about a file. If the file is a symlink
+ * return info about the file it points to, not the symlink itself.
+ *
+ *
+ * @param[in] path, path of file (e.g. /dir/file, not /cvmfs/repo/dir/file)
+ * @param[out] cst, cvmfs_stat buffer in which to write the result
+ * \return 0 on success, -1 on failure
+ */
+int cvmfs_stat_nested_file_catalog(cvmfs_context *ctx, const char *path, struct cvmfs_nc_stat *cst);
+
+/**
  * Get list of directory contents.  The directory contents includes "." and
  * "..".
  *
@@ -309,6 +357,26 @@ int cvmfs_lstat(cvmfs_context *ctx, const char *path, struct stat *st);
  * \return 0 on success, -1 on failure (sets errno)
  */
 int cvmfs_listdir(
+  cvmfs_context *ctx,
+  const char *path,
+  char ***buf,
+  size_t *buflen);
+
+/**
+ * Get list of directory contents.  The directory contents includes "." and
+ * "..".
+ *
+ * On return, the array will contain a NULL-terminated list of strings.  The
+ * caller must free the strings and the array containing them.  The array (*buf)
+ * may be NULL when this function is called.
+ *
+ * @param[in] path, path of directory (e.g. /dir, not /cvmfs/repo/dir)
+ * @param[out] buf, pointer to dynamically allocated NULL-terminated array of
+ *             strings
+ * @param[in] buflen, pointer to variable containing size of array
+ * \return 0 on success, -1 on failure (sets errno)
+ */
+int cvmfs_list_nested_file_catalog(
   cvmfs_context *ctx,
   const char *path,
   char ***buf,

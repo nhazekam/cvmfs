@@ -276,6 +276,42 @@ int cvmfs_lstat(LibContext *ctx, const char *path, struct stat *st) {
 }
 
 
+int cvmfs_ext_stat(LibContext *ctx, const char *path, struct cvmfs_stat *cst) {
+  string lpath;
+  int rc;
+  rc = expand_path(0, ctx, path, &lpath);
+  if (rc < 0) {
+    return -1;
+  }
+  path = lpath.c_str();
+
+  rc = ctx->GetExtAttr(path, cst);
+  if (rc < 0) {
+    errno = -rc;
+    return -1;
+  }
+  return 0;
+}
+
+
+int cvmfs_stat_nested_file_catalog(LibContext *ctx, const char *path, struct cvmfs_nc_stat *cst) {
+  string lpath;
+  int rc;
+  rc = expand_path(0, ctx, path, &lpath);
+  if (rc < 0) {
+    return -1;
+  }
+  path = lpath.c_str();
+
+  rc = ctx->GetNCAttr(path, cst);
+  if (rc < 0) {
+    errno = -rc;
+    return -1;
+  }
+  return 0;
+}
+
+
 int cvmfs_listdir(
   LibContext *ctx,
   const char *path,
@@ -291,6 +327,30 @@ int cvmfs_listdir(
   path = lpath.c_str();
 
   rc = ctx->ListDirectory(path, buf, buflen);
+  if (rc < 0) {
+    errno = -rc;
+    return -1;
+  }
+  return 0;
+}
+
+
+
+int cvmfs_list_nested_file_catalog(
+  LibContext *ctx,
+  const char *path,
+  char ***buf,
+  size_t *buflen
+) {
+  string lpath;
+  int rc;
+  rc = expand_path(0, ctx, path, &lpath);
+  if (rc < 0) {
+    return -1;
+  }
+  path = lpath.c_str();
+
+  rc = ctx->ListNestedFileCatalog(path, buf, buflen);
   if (rc < 0) {
     errno = -rc;
     return -1;

@@ -209,7 +209,7 @@ bool CatalogTestTool::Init() {
 
   const std::string sandbox_root = GetCurrentWorkingDirectory();
 
-  stratum0_ = sandbox_root + "/" + name_ ;
+  stratum0_ = sandbox_root + "/" + name_;
   MkdirDeep(stratum0_ + "/data", 0777);
   MakeCacheDirectories(stratum0_ + "/data", 0777);
   temp_dir_ = stratum0_ + "/data/txn";
@@ -550,5 +550,3 @@ void CreateMiniRepository(SimpleOptionsParser *options_mgr_, string *repo_path_)
   options_mgr_->SetValue("CVMFS_HTTP_PROXY", "DIRECT");
   options_mgr_->SetValue("CVMFS_PUBLIC_KEY", tester.public_key());
 }
-
-
