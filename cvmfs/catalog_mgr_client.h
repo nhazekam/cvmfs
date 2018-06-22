@@ -65,11 +65,6 @@ class ClientCatalogManager : public AbstractCatalogManager<Catalog> {
   uint64_t loaded_inodes() const { return loaded_inodes_; }
   std::string repo_name() const { return repo_name_; }
 
-
-  bool FindCatalog(const std::string  &path,
-                   Catalog   **result,
-                   DirectoryEntry     *dirent = NULL);
-
  protected:
   LoadError LoadCatalog(const PathString  &mountpoint,
                         const shash::Any  &hash,

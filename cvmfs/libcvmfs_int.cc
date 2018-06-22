@@ -416,7 +416,7 @@ int LibContext::ListDirectory(
   return 0;
 }
 
-int LibContext::ListNestedFileCatalog(
+int LibContext::ListNestedCatalog(
   const char *c_path,
   char ***buf,
   size_t *buflen
@@ -432,29 +432,22 @@ int LibContext::ListNestedFileCatalog(
   PathString path;
   path.Assign(c_path, strlen(c_path));
 
-  const string parent_path = GetParentPath(c_path);
-
-  bool found = false;
   catalog::Catalog *catalog;
-  catalog::DirectoryEntry parent_entry;
-  found = mount_point_->catalog_mgr()->FindCatalog(c_path, &catalog, &parent_entry);
-  if (!found) {
-    LogCvmfs(kLogCatalog, kLogStderr,
-             "catalog for directory '%s' cannot be found",
-             c_path);
-    assert(false);
-  } else {
-    LogCvmfs(kLogCatalog, kLogStderr,
-             "catalog for directory '%s' found",
-             c_path);
-  }
-
-  if (!found) {
-    return -ENOENT;
+  catalog::Catalog *base_catalog = mount_point_->catalog_mgr()->GetRootCatalog();
+  if(!mount_point_->catalog_mgr()->MountSubtree(path, base_catalog, &catalog)){
+    if (!catalog) {
+      LogCvmfs(kLogCatalog, kLogStderr,
+               "catalog for directory '%s' cannot be found",
+               c_path);
+      assert(false);
+    }
   }
 
   size_t listlen = 0;
   AppendStringToList(NULL, buf, &listlen, buflen);
+
+  /* Add base directory, which normally has empty string mountpoint */
+  AppendStringToList("/" , buf, &listlen, buflen);
 
   // Build listing
   catalog::Catalog *parent  = catalog->parent() ;
@@ -464,23 +457,20 @@ int LibContext::ListNestedFileCatalog(
       parents.push_back(parent);
       parent = parent->parent();
     }
-    parents.push_back(parent);
+    //parents.push_back(parent);
     while(!parents.empty()){
       AppendStringToList(parents.back()->root_prefix().c_str(),
                           buf, &listlen, buflen);
       parents.pop_back();
     }
+    AppendStringToList(catalog->root_prefix().c_str(), buf, &listlen, buflen);
   }
-
-  AppendStringToList(catalog->root_prefix().c_str(), buf, &listlen, buflen);
+  // Only add the current catalog if it has a parent otherwise it has already been added. */
 
   std::vector<catalog::Catalog::NestedCatalog> children = catalog->ListOwnNestedCatalogs();
 
   // Add all names
-  if (children.size() == 0) {
-    return -EIO;
-  }
-  for (unsigned i = 0; i < children.size(); ++i) {
+  for (unsigned i = 0; i < children.size(); i++) {
     AppendStringToList(children.at(i).mountpoint.c_str(),
                           buf, &listlen, buflen);
   }

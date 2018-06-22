@@ -323,6 +323,48 @@ bool CatalogTestTool::AddNestedCatalog(const shash::Any& root_hash, const std::s
   return true;
 }
 
+bool CatalogTestTool::FindEntry(const shash::Any& root_hash, const std::string& path, catalog::DirectoryEntry *entry) {
+  perf::Statistics stats;
+  UniquePtr<catalog::WritableCatalogManager> catalog_mgr(
+      CreateCatalogMgr(root_hash, "file://" + stratum0_, temp_dir_, spooler_,
+                       download_manager(), &stats));
+  if (!catalog_mgr.IsValid()) {
+    return false;
+  }
+
+  if (!catalog_mgr->LookupPath(path, catalog::kLookupSole, entry)) {
+    LogCvmfs(kLogCatalog, kLogStderr,
+             "catalog for directory '%s' cannot be found",
+             path.c_str());
+    return false;
+  }
+
+  return true;
+}
+
+bool CatalogTestTool::FindNestedFileCatalogHash(const shash::Any& root_hash, const std::string& path, shash::Any *nc_hash, uint64_t *size)
+{
+  perf::Statistics stats;
+  UniquePtr<catalog::WritableCatalogManager> catalog_mgr(
+      CreateCatalogMgr(root_hash, "file://" + stratum0_, temp_dir_, spooler_,
+                       download_manager(), &stats));
+  if (!catalog_mgr.IsValid()) {
+    return false;
+  }
+
+  PathString p;
+  p.Assign(&path[0], path.length());
+  bool retval = catalog_mgr->GetRootCatalog()->FindNested(p, nc_hash, size);
+  if (!retval) {
+    LogCvmfs(kLogCatalog, kLogStderr,
+             "nested catalog for directory '%s' cannot be found",
+             path.c_str());
+    return false;
+  }
+
+  return true;
+}
+
 bool CatalogTestTool::DirSpecAtRootHash(const shash::Any& root_hash,
                                         DirSpec* spec) {
   perf::Statistics stats;

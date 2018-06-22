@@ -340,7 +340,7 @@ int cvmfs_ext_stat(cvmfs_context *ctx, const char *path, struct cvmfs_stat *cst)
  * @param[out] cst, cvmfs_stat buffer in which to write the result
  * \return 0 on success, -1 on failure
  */
-int cvmfs_stat_nested_file_catalog(cvmfs_context *ctx, const char *path, struct cvmfs_nc_stat *cst);
+int cvmfs_stat_nested_catalog(cvmfs_context *ctx, const char *path, struct cvmfs_nc_stat *cst);
 
 /**
  * Get list of directory contents.  The directory contents includes "." and
@@ -376,7 +376,7 @@ int cvmfs_listdir(
  * @param[in] buflen, pointer to variable containing size of array
  * \return 0 on success, -1 on failure (sets errno)
  */
-int cvmfs_list_nested_file_catalog(
+int cvmfs_list_nested_catalog(
   cvmfs_context *ctx,
   const char *path,
   char ***buf,
