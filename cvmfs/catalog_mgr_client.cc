@@ -299,6 +299,7 @@ bool ClientCatalogManager::IsRevisionBlacklisted() {
   return false;
 }
 
+
 //------------------------------------------------------------------------------
 
 
