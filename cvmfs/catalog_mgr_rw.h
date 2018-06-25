@@ -195,9 +195,6 @@ class WritableCatalogManager : public SimpleCatalogManager {
                              const CatalogUploadContext   clg_upload_context);
 
  private:
-  inline void SyncLock() { pthread_mutex_lock(sync_lock_); }
-  inline void SyncUnlock() { pthread_mutex_unlock(sync_lock_); }
-
   //****************************************************************************
   // Workaround -- Serialized Catalog Committing
   void GetModifiedCatalogs(WritableCatalogList *result) const {
@@ -216,8 +213,6 @@ class WritableCatalogManager : public SimpleCatalogManager {
   // defined in catalog_mgr_rw.cc
   static const std::string kCatalogFilename;
 
-  // private lock of WritableCatalogManager
-  pthread_mutex_t *sync_lock_;
   upload::Spooler *spooler_;
 
   pthread_mutex_t                         *catalog_processing_lock_;

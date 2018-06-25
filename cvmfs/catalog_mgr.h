@@ -208,7 +208,15 @@ class AbstractCatalogManager : public SingleCopy {
     return (inode <= kInodeOffset) ? GetRootInode() : inode;
   }
 
+  CatalogT *FindCatalog(const PathString &path) const;
+
+  bool MountSubtree(const PathString &path, const CatalogT *entry_point,
+                    CatalogT **leaf_catalog);
  protected:
+  inline void SyncLock() { pthread_mutex_lock(sync_lock_); }
+  inline void SyncUnlock() { pthread_mutex_unlock(sync_lock_); }
+  pthread_mutex_t *sync_lock_;
+
   /**
    * Load the catalog and return a file name and the catalog hash. Derived
    * class can decide if it wants to use the hash or the path.
@@ -237,8 +245,6 @@ class AbstractCatalogManager : public SingleCopy {
 
   CatalogT *MountCatalog(const PathString &mountpoint, const shash::Any &hash,
                          CatalogT *parent_catalog);
-  bool MountSubtree(const PathString &path, const CatalogT *entry_point,
-                    CatalogT **leaf_catalog);
 
   bool AttachCatalog(const std::string &db_path, CatalogT *new_catalog);
   void DetachCatalog(CatalogT *catalog);
@@ -246,8 +252,6 @@ class AbstractCatalogManager : public SingleCopy {
   void DetachAll() { if (!catalogs_.empty()) DetachSubtree(GetRootCatalog()); }
   bool IsAttached(const PathString &root_path,
                   CatalogT **attached_catalog) const;
-
-  CatalogT *FindCatalog(const PathString &path) const;
 
   inline void ReadLock() const {
     int retval = pthread_rwlock_rdlock(rwlock_);

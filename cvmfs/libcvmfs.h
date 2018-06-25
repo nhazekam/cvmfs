@@ -37,6 +37,7 @@
 
 #include <sys/stat.h>
 #include <unistd.h>
+#include <stdint.h>
 
 // Legacy error codes
 #define LIBCVMFS_FAIL_OK         0
@@ -309,6 +310,28 @@ int cvmfs_lstat(cvmfs_context *ctx, const char *path, struct stat *st);
  * \return 0 on success, -1 on failure (sets errno)
  */
 int cvmfs_listdir(
+  cvmfs_context *ctx,
+  const char *path,
+  char ***buf,
+  size_t *buflen);
+
+/**
+ * Get list of nested catalog at path. The list contents includes "/" for the
+ * base and each nested catalog needed to reach this location. It also contains
+ * the list of nested catalogs reachable directly from the nested catalog serving
+ * this location.
+ *
+ * On return, the array will contain a NULL-terminated list of strings.  The
+ * caller must free the strings and the array containing them.  The array (*buf)
+ * may be NULL when this function is called.
+ *
+ * @param[in] path, path of nested catalog (e.g. /dir, not /cvmfs/repo/dir)
+ * @param[out] buf, pointer to dynamically allocated NULL-terminated array of
+ *             strings
+ * @param[in] buflen, pointer to variable containing size of array
+ * \return 0 on success, -1 on failure (sets errno)
+ */
+int cvmfs_list_nested_catalog(
   cvmfs_context *ctx,
   const char *path,
   char ***buf,

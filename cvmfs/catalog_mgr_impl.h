@@ -40,6 +40,10 @@ AbstractCatalogManager<CatalogT>::AbstractCatalogManager(
   assert(retval == 0);
   retval = pthread_key_create(&pkey_sqlitemem_, NULL);
   assert(retval == 0);
+  sync_lock_ =
+    reinterpret_cast<pthread_mutex_t *>(smalloc(sizeof(pthread_mutex_t)));
+  retval = pthread_mutex_init(sync_lock_, NULL);
+  assert(retval == 0);
 }
 
 template <class CatalogT>
@@ -48,6 +52,8 @@ AbstractCatalogManager<CatalogT>::~AbstractCatalogManager() {
   pthread_key_delete(pkey_sqlitemem_);
   pthread_rwlock_destroy(rwlock_);
   free(rwlock_);
+  pthread_mutex_destroy(sync_lock_);
+  free(sync_lock_);
 }
 
 template <class CatalogT>
