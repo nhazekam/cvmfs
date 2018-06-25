@@ -37,6 +37,7 @@
 
 #include <sys/stat.h>
 #include <unistd.h>
+#include <stdint.h>
 
 // Legacy error codes
 #define LIBCVMFS_FAIL_OK         0
@@ -91,6 +92,13 @@ typedef enum {
   LIBCVMFS_ERR_LOCK_WORKSPACE,
   LIBCVMFS_ERR_REVISION_BLACKLISTED,
 } cvmfs_errors;
+
+
+struct cvmfs_nc_stat {
+  const char *mountpoint;
+  const void *hash;
+  uint64_t size;
+};
 
 
 /**
@@ -293,6 +301,18 @@ int cvmfs_stat(cvmfs_context *ctx, const char *path, struct stat *st);
  * \return 0 on success, -1 on failure (sets errno)
  */
 int cvmfs_lstat(cvmfs_context *ctx, const char *path, struct stat *st);
+
+/**
+ * Get the CVMFS information about a nested catalog. This will return
+ * the nested catalog information for the nested catalog that serves this
+ * file location. The returned struct contains mountpoint, hash, and size.
+ *
+ *
+ * @param[in] path, path to nested catalog (e.g. /dir/file, not /cvmfs/repo/dir/file)
+ * @param[out] ncst, cvmfs_nc_stat buffer in which to write the result
+ * \return 0 on success, -1 on failure
+ */
+int cvmfs_stat_nested_catalog(cvmfs_context *ctx, const char *path, struct cvmfs_nc_stat *ncst);
 
 /**
  * Get list of directory contents.  The directory contents includes "." and

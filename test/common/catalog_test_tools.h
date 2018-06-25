@@ -19,7 +19,6 @@
 #include "upload.h"
 #include "signature.h"
 
-
 /**
  * Multiple DirSpecItem objects make up a DirSpec object
  *
@@ -127,6 +126,7 @@ class CatalogTestTool : public ServerTool {
   bool Apply(const std::string& id, const DirSpec& spec);
   bool ApplyAtRootHash(const shash::Any& root_hash, const DirSpec& spec);
   bool AddNestedCatalog(const shash::Any& root_hash, const std::string& path);
+  bool FindNestedFileCatalogHash(const shash::Any& root_hash, const std::string& path, shash::Any *nc_hash, uint64_t *size);
 
   bool DirSpecAtRootHash(const shash::Any& root_hash, DirSpec* spec);
 

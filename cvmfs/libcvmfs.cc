@@ -276,6 +276,24 @@ int cvmfs_lstat(LibContext *ctx, const char *path, struct stat *st) {
 }
 
 
+int cvmfs_stat_nested_catalog(LibContext *ctx, const char *path, struct cvmfs_nc_stat *cst) {
+  string lpath;
+  int rc;
+  rc = expand_path(0, ctx, path, &lpath);
+  if (rc < 0) {
+    return -1;
+  }
+  path = lpath.c_str();
+
+  rc = ctx->GetNestedCatalogAttr(path, cst);
+  if (rc < 0) {
+    errno = -rc;
+    return -1;
+  }
+  return 0;
+}
+
+
 int cvmfs_listdir(
   LibContext *ctx,
   const char *path,
@@ -297,7 +315,6 @@ int cvmfs_listdir(
   }
   return 0;
 }
-
 
 cvmfs_errors cvmfs_attach_repo_v2(
   const char *fqrn,
