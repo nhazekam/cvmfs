@@ -335,7 +335,6 @@ int cvmfs_listdir(
 }
 
 
-
 int cvmfs_list_nested_catalog(
   LibContext *ctx,
   const char *path,

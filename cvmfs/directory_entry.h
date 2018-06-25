@@ -33,7 +33,6 @@ class CommandMigrate;
 
 namespace catalog {
 
-
 // Create DirectoryEntries for unit test purposes.
 class DirectoryEntryTestFactory;
 
