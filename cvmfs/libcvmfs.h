@@ -35,6 +35,7 @@
 // 26: CernVM-FS 2.5.0
 #define LIBCVMFS_REVISION 26
 
+#include <inttypes.h>
 #include <stdint.h>
 #include <sys/stat.h>
 #include <unistd.h>
