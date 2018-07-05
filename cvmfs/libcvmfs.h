@@ -38,6 +38,7 @@
 #include <inttypes.h>
 #include <stdint.h>
 #include <sys/stat.h>
+#include <time.h>
 #include <unistd.h>
 
 // Legacy error codes
