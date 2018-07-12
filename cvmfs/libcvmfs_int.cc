@@ -418,6 +418,50 @@ int LibContext::ListDirectory(
   return 0;
 }
 
+int LibContext::ListDirectoryContents(
+  const char *c_path,
+  char ***buf,
+  size_t *len,
+  size_t *buflen
+) {
+  LogCvmfs(kLogCvmfs, kLogDebug, "cvmfs_listdir on path: %s", c_path);
+  ClientCtxGuard ctxg(geteuid(), getegid(), getpid());
+
+  if (c_path[0] == '/' && c_path[1] == '\0') {
+    // root path is expected to be "", not "/"
+    c_path = "";
+  }
+
+  PathString path;
+  path.Assign(c_path, strlen(c_path));
+
+  catalog::DirectoryEntry d;
+  const bool found = GetDirentForPath(path, &d);
+
+  if (!found) {
+    return -ENOENT;
+  }
+
+  if (!d.IsDirectory()) {
+    return -ENOTDIR;
+  }
+
+  AppendStringToList(NULL, buf, len, buflen);
+
+  // Build listing
+  // Add all names
+  catalog::StatEntryList listing_from_catalog;
+  if (!mount_point_->catalog_mgr()->ListingStat(path, &listing_from_catalog)) {
+    return -EIO;
+  }
+  for (unsigned i = 0; i < listing_from_catalog.size(); ++i) {
+    AppendStringToList(listing_from_catalog.AtPtr(i)->name.c_str(),
+                          buf, len, buflen);
+  }
+
+  return 0;
+}
+
 int LibContext::GetNestedCatalogAttr(
   const char *c_path,
   struct cvmfs_nc_attr *nc_attr

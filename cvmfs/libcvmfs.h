@@ -38,7 +38,6 @@
 #include <inttypes.h>
 #include <stdint.h>
 #include <sys/stat.h>
-#include <time.h>
 #include <unistd.h>
 
 // Legacy error codes
@@ -125,11 +124,11 @@ struct cvmfs_nc_attr* cvmfs_nc_attr_init();
 void cvmfs_nc_attr_free(struct cvmfs_nc_attr *nc_attr);
 
 struct cvmfs_attr {
-  /* Struct definition information */
+  // Struct definition information
   unsigned version;
   uint64_t size;
 
-  /* Contents of stat, mapped from DirectoryEntry */
+  // Contents of stat, mapped from DirectoryEntry
   dev_t     st_dev;
   ino_t     st_ino;
   mode_t    st_mode;
@@ -140,8 +139,8 @@ struct cvmfs_attr {
   off_t     st_size;
   time_t    mtime;
 
-  /* CVMFS related content */
-  /* This information is allocated and should be freed */
+  // CVMFS related content
+  // This information is allocated and should be freed
   char * cvm_checksum;
   char * cvm_symlink;
   char * cvm_name;
@@ -154,6 +153,7 @@ struct cvmfs_attr {
  * \Return pointer to a cvmfs_attr struct
  */
 struct cvmfs_attr* cvmfs_attr_init();
+struct cvmfs_attr* cvmfs_attr_copy(struct cvmfs_attr *o_attr);
 
 /**
  * Destroy the cvmfs_attr struct and frees the checksum, symlink,
@@ -394,6 +394,28 @@ int cvmfs_listdir(
   cvmfs_context *ctx,
   const char *path,
   char ***buf,
+  size_t *buflen);
+
+/**
+ * Get list of directory contents.  The directory does not contents includes 
+ * "." or "..".
+ *
+ * On return, the array will contain a NULL-terminated list of strings.  The
+ * caller must free the strings and the array containing them.  The array (*buf)
+ * may be NULL when this function is called.
+ *
+ * @param[in] path, path of directory (e.g. /dir, not /cvmfs/repo/dir)
+ * @param[out] buf, pointer to dynamically allocated NULL-terminated array of
+ *             strings
+ * @param[in] len, the number of valid items in the array
+ * @param[in] buflen, pointer to variable containing size of array
+ * \return 0 on success, -1 on failure (sets errno)
+ */
+int cvmfs_listdir_contents(
+  cvmfs_context *ctx,
+  const char *path,
+  char ***buf,
+  size_t *len,
   size_t *buflen);
 
 /**

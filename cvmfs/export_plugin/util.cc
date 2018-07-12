@@ -8,7 +8,7 @@
 #include "libcvmfs.h"
 #include "xattr.h"
 
-shash::Any HashMeta(const struct cvmfs_stat *stat_info) {
+shash::Any HashMeta(const struct cvmfs_attr *stat_info) {
   // TODO(steuber): Can we do any better here?
   shash::Any meta_hash(shash::kMd5);
   unsigned min_buffer_size = sizeof(mode_t)/sizeof(unsigned char)
@@ -19,8 +19,10 @@ shash::Any HashMeta(const struct cvmfs_stat *stat_info) {
     + 1;
   XattrList *xlist = reinterpret_cast<XattrList *>(stat_info->cvm_xattrs);
   unsigned char *xlist_buffer;
-  unsigned xlist_buffer_size;
-  xlist->Serialize(&xlist_buffer, &xlist_buffer_size);
+  unsigned xlist_buffer_size  = 0;
+  if (xlist) {
+    xlist->Serialize(&xlist_buffer, &xlist_buffer_size);
+  }
   unsigned char buffer[min_buffer_size+xlist_buffer_size];
   /*for (unsigned i = 0; i < (min_buffer_size+xlist_buffer_size); i++) {
     buffer[i] = 255;
@@ -42,8 +44,10 @@ shash::Any HashMeta(const struct cvmfs_stat *stat_info) {
   *(buffer+offset) = 0;
   offset+=1;
   // Add xlist
-  memcpy(buffer+offset, xlist_buffer, xlist_buffer_size);
-  delete xlist_buffer;
+  if (xlist) {
+    memcpy(buffer+offset, xlist_buffer, xlist_buffer_size);
+    delete xlist_buffer;
+  }
   // Hash
   shash::HashMem(buffer, min_buffer_size+xlist_buffer_size, &meta_hash);
   return meta_hash;

@@ -79,7 +79,7 @@ std::string BuildHiddenPath(struct fs_traversal_context *ctx,
 }
 
 int PosixSetMeta(const char *path,
-  const struct cvmfs_stat *stat_info, bool set_permissions = true)
+  const struct cvmfs_attr *stat_info, bool set_permissions = true)
 {
   int res = 0;
   if (set_permissions) {
@@ -150,6 +150,7 @@ void posix_list_dir(struct fs_traversal_context *ctx,
   *len = 0;
   size_t buflen = 5;
   *buf = reinterpret_cast<char **>(malloc(sizeof(char *) * buflen));
+  AppendStringToList(NULL, buf, len, &buflen);
 
   DIR *dr = opendir(BuildPath(ctx, dir).c_str());
 
@@ -169,7 +170,7 @@ void posix_list_dir(struct fs_traversal_context *ctx,
 }
 
 int posix_get_stat(struct fs_traversal_context *ctx,
-  const char *path, struct cvmfs_stat *stat_result) {
+  const char *path, struct cvmfs_attr *stat_result) {
   // NOTE(steuber): Save hash + last modified(!=changed) as xattr
   // -> Could also be done for directories! (chmod changes on file change)
   // Probably more realistic without last modified though
@@ -188,8 +189,6 @@ int posix_get_stat(struct fs_traversal_context *ctx,
   stat_result->st_gid = buf.st_gid;
   stat_result->st_rdev = buf.st_rdev;
   stat_result->st_size = buf.st_size;
-  stat_result->st_blksize = buf.st_blksize;
-  stat_result->st_blocks = buf.st_blocks;
   stat_result->mtime = buf.st_mtime;
 
   // Calculate hash
@@ -219,7 +218,7 @@ int posix_get_stat(struct fs_traversal_context *ctx,
 }
 
 const char *posix_get_identifier(struct fs_traversal_context *ctx,
-  const struct cvmfs_stat *stat) {
+  const struct cvmfs_attr *stat) {
   shash::Any content_hash =
     shash::MkFromHexPtr(shash::HexPtr(stat->cvm_checksum));
   shash::Any meta_hash = HashMeta(stat);
@@ -301,7 +300,7 @@ int posix_do_link(struct fs_traversal_context *ctx,
 
 int posix_do_mkdir(struct fs_traversal_context *ctx,
               const char *path,
-              const struct cvmfs_stat *stat_info) {
+              const struct cvmfs_attr *stat_info) {
   std::string complete_path = BuildPath(ctx, path);
   std::string dirname = GetParentPath(complete_path);
   if (posix_cleanup_path(ctx, path) != 0) {
@@ -312,10 +311,11 @@ int posix_do_mkdir(struct fs_traversal_context *ctx,
   return PosixSetMeta(complete_path.c_str(), stat_info);
 }
 
+// Should this pull the symlink from the stat?
 int posix_do_symlink(struct fs_traversal_context *ctx,
               const char *src,
               const char *dest,
-              const struct cvmfs_stat *stat_info) {
+              const struct cvmfs_attr *stat_info) {
   std::string complete_src_path = BuildPath(ctx, src);
   std::string complete_dest_path = dest;
   if (posix_cleanup_path(ctx, src) != 0) {
@@ -327,7 +327,7 @@ int posix_do_symlink(struct fs_traversal_context *ctx,
 }
 
 int posix_touch(struct fs_traversal_context *ctx,
-              const struct cvmfs_stat *stat_info) {
+              const struct cvmfs_attr *stat_info) {
   // NOTE(steuber): creat is only atomic on non-NFS paths!
   const char *identifier = posix_get_identifier(ctx, stat_info);
   if (posix_has_file(ctx, identifier)) {
@@ -339,9 +339,16 @@ int posix_touch(struct fs_traversal_context *ctx,
   if (res1 < 0) return -1;
   int res2 = close(res1);
   if (res2 < 0) return -1;
+  printf("Created : %s\n", hidden_datapath.c_str());
   return PosixSetMeta(hidden_datapath.c_str(), stat_info);
 }
 
+int posix_set_meta(struct fs_traversal_context *ctx,
+                   const char *path,
+                   const struct cvmfs_attr *stat_info) {
+  std::string complete_path = BuildPath(ctx, path);
+  return PosixSetMeta(complete_path.c_str(), stat_info);
+}
 
 struct posix_file_handle {
   std::string path;
@@ -352,7 +359,6 @@ void *posix_get_handle(struct fs_traversal_context *ctx,
               const char *identifier) {
   struct posix_file_handle *file_ctx = new struct posix_file_handle;
   file_ctx->path = BuildHiddenPath(ctx, identifier);
-
   return file_ctx;
 }
 
@@ -367,6 +373,7 @@ int posix_do_fopen(void *file_ctx, fs_open_type op_mode) {
   }
   FILE *fd = fopen(handle->path.c_str(), mode);
   if (fd == NULL) {
+    perror("Open Failed: ");
     return -1;
   }
   handle->fd = fd;
@@ -386,7 +393,8 @@ int posix_do_fread(void *file_ctx, char *buff, size_t len, size_t *read_len) {
   struct posix_file_handle *handle =
     reinterpret_cast<posix_file_handle *>(file_ctx);
   *read_len = fread(buff, sizeof(char), len, handle->fd);
-  if (*read_len < len && ferror(handle->fd) != 0) {
+  if ((*read_len < len) && (ferror(handle->fd) != 0)) {
+      perror("Read Failed: ");
       clearerr(handle->fd);
       return -1;
   }
@@ -398,6 +406,8 @@ int posix_do_fwrite(void *file_ctx, const char *buff, size_t len) {
     reinterpret_cast<posix_file_handle *>(file_ctx);
   size_t written_len = fwrite(buff, sizeof(char), len, handle->fd);
   if (written_len != len) {
+    perror("Write Failed: ");
+    clearerr(handle->fd);
     return -1;
   }
   return 0;
@@ -446,6 +456,7 @@ struct fs_traversal *posix_get_interface() {
   result->do_mkdir = posix_do_mkdir;
   result->do_rmdir = posix_do_rmdir;
   result->touch = posix_touch;
+  result->set_meta = posix_set_meta;
   result->get_handle = posix_get_handle;
   result->do_symlink = posix_do_symlink;
 

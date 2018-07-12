@@ -4,14 +4,14 @@
 #ifndef CVMFS_EXPORT_PLUGIN_FS_TRAVERSAL_INTERFACE_H_
 #define CVMFS_EXPORT_PLUGIN_FS_TRAVERSAL_INTERFACE_H_
 
-#include "libcvmfs.h"
+#include <stdlib.h>
 
 struct fs_traversal_context {
-  uint64_t version;
-  uint64_t size;
+  size_t version;
+  size_t size;
 
-  const char *repo;
-  const char *data;
+  char *repo;
+  char *data;
 
   void * ctx;
 };
@@ -23,6 +23,9 @@ enum fs_open_type {
 };
 
 struct fs_traversal {
+
+  struct fs_traversal_context *context_;
+
   /**
    * Method which initializes a file system traversal context based on
    * repository and data storage information
@@ -71,7 +74,7 @@ struct fs_traversal {
    * @returns 0 on success
    */
   int (*get_stat)(struct fs_traversal_context *ctx,
-                const char *path, struct cvmfs_stat *stat);
+                const char *path, struct cvmfs_attr *stat);
 
   /**
    * Method which returns an identifier (usually a path)
@@ -83,7 +86,7 @@ struct fs_traversal {
    * The memory of the char is allocated on the heap and needs to be freed
    */
   const char *(*get_identifier)(struct fs_traversal_context *ctx,
-                const struct cvmfs_stat *stat);
+                const struct cvmfs_attr *stat);
 
 
   /**
@@ -150,7 +153,7 @@ struct fs_traversal {
    */
   int (*do_mkdir)(struct fs_traversal_context *ctx,
                 const char *path,
-                const struct cvmfs_stat *stat);
+                const struct cvmfs_attr *stat);
 
   /**
    * Method which removes the given directory
@@ -178,8 +181,19 @@ struct fs_traversal {
    * @param[in] stat The stat containing the meta data for file creation
    */
   int (*touch)(struct fs_traversal_context *ctx,
-                const struct cvmfs_stat *stat);
+                const struct cvmfs_attr *stat);
 
+  /**
+   * Method which will set the metadata of a given path
+   * 
+   * @param[in] ctx The file system traversal context
+   * @param[in] path The path to the directory whose meta data should set
+   * @param[in] stat The stat containing the desired meta data
+   */
+
+  int (*set_meta)(struct fs_traversal_context *ctx,
+                  const char *path,
+                  const struct cvmfs_attr *stat_info);
   /**
    * Retrieves a handle struct which allows the manipulation of the file
    * defined by the given identifier
@@ -215,7 +229,7 @@ struct fs_traversal {
   int (*do_symlink)(struct fs_traversal_context *ctx,
                 const char *src,
                 const char *dest,
-                const struct cvmfs_stat *stat_info);
+                const struct cvmfs_attr *stat_info);
 
   /**
    * Method which opens a file described by the given file context.

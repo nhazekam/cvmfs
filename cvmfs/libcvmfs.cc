@@ -42,6 +42,23 @@ struct cvmfs_attr* cvmfs_attr_init()
   return attr;
 }
 
+struct cvmfs_attr *cvmfs_attr_copy(struct cvmfs_attr *o_attr)
+{
+  struct cvmfs_attr *attr  = cvmfs_attr_init();
+  attr->st_ino   = o_attr->st_ino;
+  attr->st_mode  = o_attr->st_mode;
+  attr->st_nlink = o_attr->st_nlink;
+  attr->st_uid   = o_attr->st_uid;
+  attr->st_gid   = o_attr->st_gid;
+  attr->st_rdev  = o_attr->st_rdev;
+  attr->st_size  = o_attr->st_size;
+  attr->mtime    = o_attr->mtime;
+  attr->cvm_checksum = strdup(o_attr->cvm_checksum);
+  attr->cvm_symlink  = strdup(o_attr->cvm_symlink);
+  attr->cvm_name     = strdup(o_attr->cvm_name);
+  attr->cvm_xattrs   = o_attr->cvm_xattrs;
+  return attr;
+}
 
 /**
  * Destroy the cvmfs_attr struct and frees the checksum, symlink,
@@ -323,7 +340,6 @@ int cvmfs_lstat(LibContext *ctx, const char *path, struct stat *st) {
   return 0;
 }
 
-
 int cvmfs_stat_attr(
   LibContext *ctx,
   const char *path,
@@ -345,7 +361,6 @@ int cvmfs_stat_attr(
   return 0;
 }
 
-
 int cvmfs_listdir(
   LibContext *ctx,
   const char *path,
@@ -361,6 +376,30 @@ int cvmfs_listdir(
   path = lpath.c_str();
 
   rc = ctx->ListDirectory(path, buf, buflen);
+  if (rc < 0) {
+    errno = -rc;
+    return -1;
+  }
+  return 0;
+}
+
+
+int cvmfs_listdir_contents(
+  LibContext *ctx,
+  const char *path,
+  char ***buf,
+  size_t *len,
+  size_t *buflen
+) {
+  string lpath;
+  int rc;
+  rc = expand_path(0, ctx, path, &lpath);
+  if (rc < 0) {
+    return -1;
+  }
+  path = lpath.c_str();
+
+  rc = ctx->ListDirectoryContents(path, buf, len, buflen);
   if (rc < 0) {
     errno = -rc;
     return -1;

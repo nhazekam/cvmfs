@@ -99,6 +99,10 @@ class LibContext : SingleCopy {
   int GetAttr(const char *c_path, struct stat *info);
   int Readlink(const char *path, char *buf, size_t size);
   int ListDirectory(const char *path, char ***buf, size_t *buflen);
+  int ListDirectoryContents(const char *path,
+                            char ***buf,
+                            size_t *len,
+                            size_t *buflen);
 
   int Open(const char *c_path);
   int64_t Pread(int fd, void *buf, uint64_t size, uint64_t off);
