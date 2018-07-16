@@ -99,7 +99,8 @@ int PosixSetMeta(const char *path,
   if (xlist) {
     std::vector<std::string> v = xlist->ListKeys();
     std::string val;
-    for (std::vector<std::string>::iterator it = v.begin(); it != v.end(); ++it) {
+    for (std::vector<std::string>::iterator it = v.begin();
+         it != v.end(); ++it) {
       if (!set_permissions) {
         continue;
       }

@@ -737,7 +737,7 @@ TEST_P(T_Fs_Traversal_Interface, TransferCVMFSToPosix) {
   dest->context_ = context;
 
   ASSERT_FALSE(shrinkwrap::CommandExport().Traverse("", src, dest, 0, true));
-  //ASSERT_TRUE(shrinkwrap::CommandExport().Traverse("", dest, src, 0, true));
+  // ASSERT_TRUE(shrinkwrap::CommandExport().Traverse("", dest, src, 0, true));
 
   sleep(120);
 

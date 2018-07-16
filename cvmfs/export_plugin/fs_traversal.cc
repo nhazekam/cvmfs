@@ -2,9 +2,9 @@
  * This file is part of the CernVM File System.
  */
 
-#include <fstream>
 #include <pthread.h>
 #include <stdio.h>
+#include <fstream>
 
 #include "atomic.h"
 #include "fs_traversal.h"
@@ -259,7 +259,7 @@ bool CommandExport::Traverse(
             if (dest->do_symlink(dest->context_, src_entry,
                              src_st->cvm_symlink, src_st)) {
               LogCvmfs(kLogCvmfs, kLogDebug,
-              "Traversal failed to symlink %s->%s", 
+              "Traversal failed to symlink %s->%s",
               src_entry, src_st->cvm_symlink);
               return retval;
             }
@@ -327,7 +327,7 @@ bool CommandExport::Traverse(
           if (dest->do_symlink(dest->context_, src_entry,
                            src_st->cvm_symlink, src_st)) {
             LogCvmfs(kLogCvmfs, kLogDebug,
-            "Traversal failed to symlink %s->%s", 
+            "Traversal failed to symlink %s->%s",
             src_entry, src_st->cvm_symlink);
             return false;
           }
@@ -351,8 +351,8 @@ bool CommandExport::Traverse(
           break;
         case S_IFDIR:
           // We may want this to be recursive regardless
-          if(recursive){
-            if (!Traverse(dest_entry, src, dest, parallel, recursive)){
+          if (recursive) {
+            if (!Traverse(dest_entry, src, dest, parallel, recursive)) {
               return false;
             }
           }
@@ -463,7 +463,7 @@ static void *MainWorker(void *data) {
 }
 
 // Dummy function for now
-bool trim_trace_spec(string &entry){
+bool trim_trace_spec(string *entry) {
   return true;
 }
 
@@ -556,13 +556,13 @@ int CommandExport::Main() {
     assert(retval == 0);
   }
 
-  if(!trace_file.empty()){
+  if (!trace_file.empty()) {
     ifstream trace(trace_file.c_str());
     std::string entry;
     while (getline(trace, entry))
     {
       // Function removes special characters and determines if its recursive
-      recursive = trim_trace_spec(entry);
+      recursive = trim_trace_spec(&entry);
       char *entry_point = strdup(entry.c_str());
       result = Traverse(entry_point, src, dest, num_parallel, recursive);
       free(entry_point);
