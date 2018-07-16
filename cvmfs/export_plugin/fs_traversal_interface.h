@@ -23,7 +23,6 @@ enum fs_open_type {
 };
 
 struct fs_traversal {
-
   struct fs_traversal_context *context_;
 
   /**

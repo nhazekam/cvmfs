@@ -7,8 +7,8 @@
 
 #include <string>
 
-#include "fs_traversal_interface.h"
 #include "fs_traversal.h"
+#include "fs_traversal_interface.h"
 
 namespace shrinkwrap {
 
@@ -19,7 +19,8 @@ class CommandExport {
   bool Traverse(const char *dir,
                 struct fs_traversal *src,
                 struct fs_traversal *dest,
-                int parallel);
+                int parallel,
+                bool recursive);
 };
 
 }  // namespace shrinkwrap

@@ -84,22 +84,34 @@ int PosixSetMeta(const char *path,
   int res = 0;
   if (set_permissions) {
     res = chmod(path, stat_info->st_mode);
-    if (res != 0) return -1;
+    if (res != 0) {
+      LogCvmfs(kLogCvmfs, kLogDebug, "Posix chmod %s failed", path);
+      return -1;
+    }
     res = chown(path, stat_info->st_uid, stat_info->st_gid);
-    if (res != 0) return -1;
+    if (res != 0) {
+      LogCvmfs(kLogCvmfs, kLogDebug, "Posix chown %s failed", path);
+      return -1;
+    }
   }
   // TODO(steuber): Set xattrs with setxattr (if symlink no user. xattrs!)
   XattrList *xlist = reinterpret_cast<XattrList *>(stat_info->cvm_xattrs);
-  std::vector<std::string> v = xlist->ListKeys();
-  std::string val;
-  for (std::vector<std::string>::iterator it = v.begin(); it != v.end(); ++it) {
-    if (!set_permissions) {
-      continue;
+  if (xlist) {
+    std::vector<std::string> v = xlist->ListKeys();
+    std::string val;
+    for (std::vector<std::string>::iterator it = v.begin(); it != v.end(); ++it) {
+      if (!set_permissions) {
+        continue;
+      }
+      xlist->Get(*it, &val);
+      int res = lsetxattr(path, it->c_str(), val.c_str(), val.length(), 0);
+      if (res != 0) {
+        LogCvmfs(kLogCvmfs, kLogDebug, "Posix lsetxattr %s failed", path);
+        return -1;
+      }
     }
-    xlist->Get(*it, &val);
-    int res = lsetxattr(path, it->c_str(), val.c_str(), val.length(), 0);
-    if (res != 0) return -1;
   }
+  // Redundant return?
   if (res != 0) return -1;
   return 0;
 }
@@ -339,7 +351,6 @@ int posix_touch(struct fs_traversal_context *ctx,
   if (res1 < 0) return -1;
   int res2 = close(res1);
   if (res2 < 0) return -1;
-  printf("Created : %s\n", hidden_datapath.c_str());
   return PosixSetMeta(hidden_datapath.c_str(), stat_info);
 }
 

@@ -80,7 +80,7 @@ int libcvmfs_do_fopen(void *file_ctx, fs_open_type op_mode) {
   struct libcvmfs_file_handle *handle =
     reinterpret_cast<libcvmfs_file_handle *>(file_ctx);
   handle->fd = cvmfs_open(handle->ctx, handle->path);
-  if(handle->fd == -1){
+  if (handle->fd == -1) {
     return -1;
   }
   return 0;
@@ -95,7 +95,12 @@ int libcvmfs_do_fclose(void *file_ctx) {
   return 0;
 }
 
-int libcvmfs_do_fread(void *file_ctx, char *buff, size_t len, size_t *read_len) {
+int libcvmfs_do_fread(
+  void *file_ctx,
+  char *buff,
+  size_t len,
+  size_t *read_len
+) {
   struct libcvmfs_file_handle *handle =
     reinterpret_cast<libcvmfs_file_handle *>(file_ctx);
   *read_len = cvmfs_pread(handle->ctx, handle->fd, buff, len, handle->fd);
@@ -122,10 +127,11 @@ struct fs_traversal_context *libcvmfs_initialize(
   struct fs_traversal_context *result = new struct fs_traversal_context;
   result->version = 1;
   result->size = sizeof(*result);
-  result->repo =  strdup(repo);
+  result->repo = strdup(repo);
   result->data = NULL;
-  if(data)
+  if (data) {
     result->data = strdup(data);
+  }
   /*
   cvmfs_option_map *opts = cvmfs_options_init();
   cvmfs_init_v2(opts);

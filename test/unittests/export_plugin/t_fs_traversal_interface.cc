@@ -136,7 +136,7 @@ class T_Fs_Traversal_Interface :
     shash::HashString(content1, &content1_hash);
 
     FILE *f = fopen("temp.data", "w");
-    if(f == NULL){
+    if (f == NULL) {
       perror("Open failed :");
     }
     char * val = strdup(content1.c_str());
@@ -144,7 +144,8 @@ class T_Fs_Traversal_Interface :
     fclose(f);
     shash::Any cvm_checksum = shash::Any(shash::kSha1);
     shash::HashFile("temp.data", &cvm_checksum);
-    ASSERT_STREQ(cvm_checksum.ToString().c_str(), content1_hash.ToString().c_str());
+    ASSERT_STREQ(cvm_checksum.ToString().c_str(),
+                 content1_hash.ToString().c_str());
 
     // FILE CONTENT 2
     std::string content2 = prefix + ": Hello traversal!\nHello world!";
@@ -166,11 +167,9 @@ class T_Fs_Traversal_Interface :
     *ident1 = std::string(
       fs_traversal_instance_->interface->get_identifier(context_,
       stat_values1));
-    printf("ID 1 : %s\n", ident1->c_str());
     *ident2 = std::string(
       fs_traversal_instance_->interface->get_identifier(context_,
         stat_values2));
-    printf("ID 2 : %s\n", ident2->c_str());
 
     // BACKGROUND FILES
     ASSERT_EQ(0, fs_traversal_instance_->interface->touch(
@@ -617,15 +616,6 @@ TEST_P(T_Fs_Traversal_Interface, TransferPosixToPosix) {
   std::string prefix = "SRC";
   MakeTestFiles(prefix, &ident1, &ident2);
 
-  void *hdl1 = fs_traversal_instance_->interface->get_handle(context_, ident1.c_str());
-  ASSERT_TRUE(NULL != hdl1);
-  ASSERT_EQ(0, fs_traversal_instance_->interface->do_fopen(hdl1, fs_open_write));
-  std::string content1 = prefix + ": Hello world!\nHello traversal!";
-  ASSERT_EQ(0, fs_traversal_instance_->interface->do_fwrite(hdl1, content1.c_str(), content1.length()));
-  ASSERT_EQ(0, fs_traversal_instance_->interface->do_fclose(hdl1));
-  fs_traversal_instance_->interface->do_ffree(hdl1);
-
-
   std::string repoName = GetCurrentWorkingDirectory();
   char *src_name  = strdup((repoName + string("/SRC-foo")).c_str());
   char *src_data  = strdup((repoName + string("/SDATA")).c_str());
@@ -635,32 +625,18 @@ TEST_P(T_Fs_Traversal_Interface, TransferPosixToPosix) {
   struct fs_traversal *src = posix_get_interface();
   struct fs_traversal_context *context = src->initialize(src_name, src_data);
   src->context_ = context;
- 
+
   struct fs_traversal *dest = posix_get_interface();
   context = dest->initialize(src_name, src_data);
   dest->context_ = context;
 
-  ASSERT_TRUE(shrinkwrap::CommandExport().Traverse("", fs_traversal_instance_->interface, src, 0));
+  ASSERT_TRUE(shrinkwrap::CommandExport().Traverse("", src, dest, 0, true));
 
   dest->finalize(dest->context_);
   context = dest->initialize(dest_name, dest_data);
   dest->context_ = context;
 
-  ASSERT_TRUE(shrinkwrap::CommandExport().Traverse("", src, dest, 0));
-
-  hdl1 = dest->get_handle(dest->context_, ident1.c_str());
-  ASSERT_TRUE(NULL != hdl1);
-  char buf[50];
-  size_t rlen;
-  //sleep(200);
-  ASSERT_EQ(0, dest->do_fopen(hdl1, fs_open_read));
-  ASSERT_EQ(-1, dest->do_fwrite(hdl1, content1.c_str(), content1.length()));
-  ASSERT_EQ(-1, dest->do_fread(hdl1, buf, 100, &rlen));
-  buf[rlen] = '\0';
-  ASSERT_EQ(content1.length(), rlen);
-  ASSERT_STREQ(content1.c_str(), buf);
-  ASSERT_EQ(0, src->do_fclose(hdl1));
-  dest->do_ffree(hdl1);
+  ASSERT_TRUE(shrinkwrap::CommandExport().Traverse("", src, dest, 0, true));
 
   src->finalize(src->context_);
   dest->finalize(dest->context_);
@@ -760,7 +736,10 @@ TEST_P(T_Fs_Traversal_Interface, TransferCVMFSToPosix) {
   context = dest->initialize("posix", "posix_data");
   dest->context_ = context;
 
-  ASSERT_TRUE(shrinkwrap::CommandExport().Traverse("", src, dest, 0));
+  ASSERT_FALSE(shrinkwrap::CommandExport().Traverse("", src, dest, 0, true));
+  //ASSERT_TRUE(shrinkwrap::CommandExport().Traverse("", dest, src, 0, true));
+
+  sleep(120);
 
   src->finalize(src->context_);
   dest->finalize(dest->context_);

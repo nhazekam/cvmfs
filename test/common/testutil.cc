@@ -6,6 +6,7 @@
 #ifdef __APPLE__
   #include <sys/sysctl.h>
 #endif
+#include <sys/types.h>
 #include <syslog.h>
 #include <unistd.h>
 
@@ -206,6 +207,8 @@ DirectoryEntry DirectoryEntryTestFactory::RegularFile(const string &name,
                                                       shash::Any hash) {
   DirectoryEntry dirent;
   dirent.mode_ = 33188;
+  dirent.uid_ = getuid();
+  dirent.gid_ = getgid();
   dirent.name_ = NameString(name);
   dirent.checksum_ = hash;
   dirent.size_ = size;
@@ -234,6 +237,8 @@ DirectoryEntry DirectoryEntryTestFactory::Directory(
 {
   DirectoryEntry dirent;
   dirent.mode_ = 16893;
+  dirent.uid_ = getuid();
+  dirent.gid_ = getgid();
   dirent.name_ = NameString(name);
   dirent.checksum_ = hash;
   dirent.size_ = size;
@@ -247,6 +252,8 @@ DirectoryEntry DirectoryEntryTestFactory::Symlink(const string &name,
                                                   const string &symlink_path) {
   DirectoryEntry dirent;
   dirent.mode_ = 41471;
+  dirent.uid_ = getuid();
+  dirent.gid_ = getgid();
   dirent.name_ = NameString(name);
   dirent.size_ = size;
   dirent.symlink_ = LinkString(symlink_path);
